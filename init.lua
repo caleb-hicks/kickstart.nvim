@@ -174,7 +174,8 @@ vim.o.confirm = true
 -- [[ Custom Keymaps ]]
 -- run debug session for rust
 vim.keymap.set('n', '<leader>dr', function() vim.cmd.RustLsp 'debug' end, { desc = 'Debug Rust' })
-
+-- open NvimTree
+vim.keymap.set('n', '<leader>e', function() vim.cmd.NvimTreeToggle() end, { desc = 'Toggle NvimTree' })
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
