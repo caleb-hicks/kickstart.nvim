@@ -98,7 +98,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -112,7 +112,7 @@ vim.o.number = true
 vim.o.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
-vim.o.mouse = 'a'
+vim.o.mouse = 'n'
 
 -- Don't show the mode, since it's already in the status line
 vim.o.showmode = false
@@ -176,6 +176,26 @@ vim.o.confirm = true
 vim.keymap.set('n', '<leader>dr', function() vim.cmd.RustLsp 'debug' end, { desc = 'Debug Rust' })
 -- open NvimTree
 vim.keymap.set('n', '<leader>e', function() vim.cmd.NvimTreeToggle() end, { desc = 'Toggle NvimTree' })
+
+vim.keymap.set('n', '<leader>tt', '<cmd>tab term <CR>', { desc = 'Open terminal in new tab' })
+vim.keymap.set('n', '<leader>vt', '<cmd>vert term <CR>', { desc = 'Open terminal in vertical split' })
+-- vim.keymap.set('n', '<leader>c', '<cmd>vert term copilot<CR>', { desc = 'Open copilot cli in vertical split' })
+vim.keymap.set('n', '<leader>gg', '<cmd>LazyGit<CR>', { desc = 'Open LazyGit' })
+vim.keymap.set('n', '<leader>gh', '<cmd>DiffviewFileHistory %<CR>', { desc = 'View git history for current file' })
+vim.keymap.set('n', '<leader>c', function()
+  local dir = vim.fn.expand '%:p:h'
+
+  vim.cmd 'vsplit'
+  vim.cmd 'terminal'
+
+  local job = vim.b.terminal_job_id
+  vim.fn.chansend(job, 'cd ' .. vim.fn.shellescape(dir) .. '\n')
+  vim.fn.chansend(job, 'copilot\n')
+end, { desc = 'Open copilot in a vertical split' })
+vim.keymap.set('n', '<C-Up>', ':resize +2<CR>')
+vim.keymap.set('n', '<C-Down>', ':resize -2<CR>')
+vim.keymap.set('n', '<C-Left>', ':vertical resize -2<CR>')
+vim.keymap.set('n', '<C-Right>', ':vertical resize +2<CR>')
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
@@ -183,8 +203,8 @@ vim.keymap.set('n', '<leader>e', function() vim.cmd.NvimTreeToggle() end, { desc
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
--- Escape terminal with esc key
-vim.keymap.set('t', '<Esc>', '<C-\\><C-n>')
+-- Escape terminal with esc key (this was already present with esc esc
+-- vim.keymap.set('t', '<Esc>', '<C-\\><C-n>')
 
 -- Diagnostic Config & Keymaps
 -- See :help vim.diagnostic.Opts
@@ -226,7 +246,6 @@ vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left wind
 vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
-
 -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
 -- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
 -- vim.keymap.set("n", "<C-S-l>", "<C-w>L", { desc = "Move window to the right" })
@@ -273,7 +292,23 @@ require('lazy').setup({
   -- NOTE: Plugins can be added via a link or github org/name. To run setup automatically, use `opts = {}`
   { 'NMAC427/guess-indent.nvim', opts = {} },
   { 'nvim-tree/nvim-web-devicons', opts = {} },
-  { 'nvim-tree/nvim-tree.lua', opts = {} },
+  {
+    'nvim-tree/nvim-tree.lua',
+    view = {
+      width = 30,
+      preserve_window_proportions = true,
+    },
+    opts = {
+      actions = {
+        open_file = {
+          resize_window = false, -- Default is true
+        },
+      },
+    },
+  },
+  { 'lewis6991/gitsigns.nvim', opts = {
+    current_line_blame = true,
+  } },
   {
     'MeanderingProgrammer/render-markdown.nvim',
     dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-mini/mini.nvim' }, -- if you use the mini.nvim suite
@@ -303,6 +338,30 @@ require('lazy').setup({
   --        end,
   --    }
   --
+
+  {
+    'seblyng/roslyn.nvim',
+    ft = { 'cs', 'razor' },
+    dependencies = {
+      -- Optional: gives you excellent completion UI and snippet triggers
+      'hrsh7th/nvim-cmp',
+    },
+    opts = {
+      -- Zero config needed for modern iterations; it falls back to your local dotnet env
+    },
+  },
+  {
+    'TheLeoP/powershell.nvim',
+    ft = { 'ps1', 'psm1', 'psd1' },
+    opts = {
+      -- Optional: Path to your PowerShell Editor Services bundle if not using mason.nvim
+      bundle_path = vim.fn.stdpath 'data' .. '/mason/packages/powershell-editor-services',
+    },
+    dependencies = {
+      'neovim/nvim-lspconfig',
+      'rcarriga/nvim-dap', -- Optional: Only needed if you want debugging support
+    },
+  },
   -- Here is a more advanced example where we pass configuration
   -- options to `gitsigns.nvim`.
   --
@@ -322,7 +381,23 @@ require('lazy').setup({
       },
     },
   },
-
+  -- git plugins
+  {
+    'kdheepak/lazygit.nvim',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+    },
+    {
+      'NeogitOrg/neogit',
+      dependencies = {
+        'nvim-lua/plenary.nvim',
+        'sindrets/diffview.nvim',
+        'nvim-telescope/telescope.nvim',
+      },
+      config = true,
+    },
+  },
+  --
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
   --
   -- This is often very useful to both group configuration, as well as handle
@@ -355,6 +430,19 @@ require('lazy').setup({
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } }, -- Enable gitsigns recommended keymaps first
         { 'gr', group = 'LSP Actions', mode = { 'n' } },
       },
+    },
+  },
+  {
+    'folke/flash.nvim',
+    event = 'VeryLazy',
+    ---@type Flash.Config
+    opts = {},
+    keys = {
+      { 's', mode = { 'n', 'x', 'o' }, function() require('flash').jump() end, desc = 'Flash' },
+      { 'S', mode = { 'n', 'x', 'o' }, function() require('flash').treesitter() end, desc = 'Flash Treesitter' },
+      { 'r', mode = 'o', function() require('flash').remote() end, desc = 'Remote Flash' },
+      { 'R', mode = { 'o', 'x' }, function() require('flash').treesitter_search() end, desc = 'Treesitter Search' },
+      { '<c-s>', mode = { 'c' }, function() require('flash').toggle() end, desc = 'Toggle Flash Search' },
     },
   },
 
@@ -636,7 +724,7 @@ require('lazy').setup({
       local servers = {
         -- clangd = {},
         -- gopls = {},
-        -- pyright = {},
+        pyright = {},
         -- rust_analyzer = {},
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
@@ -724,11 +812,15 @@ require('lazy').setup({
         else
           return {
             timeout_ms = 500,
-            lsp_format = 'fallback',
           }
         end
       end,
       formatters_by_ft = {
+        ps1 = {},
+        cs = {}, -- { 'csharpier' },
+        javascript = { 'prettierd', 'prettier', stop_after_first = true },
+        typescript = { 'prettierd', 'prettier', stop_after_first = true },
+        json = { 'prettierd', 'prettier', stop_after_first = true },
         lua = { 'stylua' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
@@ -850,7 +942,7 @@ require('lazy').setup({
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'rose-pine'
+      vim.cmd.colorscheme 'rose-pine-moon'
     end,
   },
 
@@ -881,7 +973,7 @@ require('lazy').setup({
       -- - saiw) - [S]urround [A]dd [I]nner [W]ord [)]Paren
       -- - sd'   - [S]urround [D]elete [']quotes
       -- - sr)'  - [S]urround [R]eplace [)] [']
-      require('mini.surround').setup()
+      -- require('mini.surround').setup()
 
       -- Simple and easy statusline.
       --  You could remove this setup call if you don't like it,
